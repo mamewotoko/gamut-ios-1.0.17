@@ -1,0 +1,54 @@
+PLAT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform
+SDK = /Developer/SDKs/iPhoneOS6.0.sdk
+OCAMLDIR = /usr/local/ocamlxarm/v7
+OCAMLBINDIR = $(OCAMLDIR)/bin/
+CC = $(PLAT)/Developer/usr/bin/llvm-gcc-4.2 -arch armv7
+CFLAGS = -isysroot $(PLAT)$(SDK) -isystem $(OCAMLDIR)/lib/ocaml/ -DCAML_NAME_SPACE
+##
+MFLAGS = -fobjc-legacy-dispatch -fobjc-abi-version=2
+LDFLAGS = -Xlinker -objc_abi_version -Xlinker 2
+
+MOBS = ViewDelegator.o wrap.o main.o
+MLOBS = wrapper.cmx wrappee.cmx cocoa.cmx nsTimer.cmx uiKit.cmx \
+	uiBezierPath.cmx uiFont.cmx uiView.cmx uiApplication.cmx \
+	gamutctlr.cmx
+
+all:: Gamut Gamut.nib Info.plist runsim
+
+Gamut: $(MOBS) $(MLOBS)
+	$(OCAMLBINDIR)ocamlopt -cc '$(CC)' -ccopt '$(CFLAGS)' \
+	    -cclib '$(LDFLAGS)' \
+	    -o Gamut \
+	    $(MOBS) $(MLOBS) \
+	    -cclib -Wl,-syslibroot,$(PLAT)$(SDK) -cclib -Wl,-no_pie \
+	    -cclib '-framework UIKit' \
+	    -cclib '-framework Foundation'
+
+execute: Gamut Gamut.nib Info.plist
+	sh -x ./runsim Gamut
+
+Gamut.nib: Gamut.xib
+	ibtool --compile Gamut.nib Gamut.xib
+
+
+clean::
+	rm -rf Gamut Gamut.nib build *.o *.cm[iox]
+
+%.o: %.m
+	$(CC) $(CFLAGS) $(MFLAGS) -c $<
+
+%.cmi: %.mli
+	$(OCAMLBINDIR)ocamlc -c $<
+
+%.cmo: %.ml
+	$(OCAMLBINDIR)ocamlc -c $<
+
+%.cmx: %.ml
+	$(OCAMLBINDIR)ocamlopt -cc '$(CC)' -ccopt '$(CFLAGS)' -c $<
+
+depend::
+	$(OCAMLBINDIR)ocamldep *.ml *.mli > MLDepend
+	$(CC) $(CFLAGS) -MM *.m > MDepend
+
+-include MLDepend
+-include MDepend
