@@ -17,7 +17,8 @@ How to Build
 2. copy files in this directory into unzipped directory
 3. modify PLAT, SDK, OCAMLDIR variable in Makefile.ios
 4. open unzipped directory by Xcode
-5. build by Xcode
+5. select "Gamut > iOS Device scheme"
+6. build by Xcode
 
 How to Run
 ----------
